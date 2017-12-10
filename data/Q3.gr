@@ -1,0 +1,15 @@
+S : DL
+L : SV
+S : EQ
+Q : SZ
+S : DP
+P : BV
+S : EK
+K : BZ
+E : 1
+Z : 2
+D : 3
+V : 4
+B : BF
+B : F
+F : 5
