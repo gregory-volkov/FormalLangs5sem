@@ -1,3 +1,4 @@
+import sys
 from parsing import *
 import numpy as np
 from string import digits, ascii_lowercase
@@ -46,4 +47,14 @@ def grammar_closure(gram, matrix):
                         stop = False
 
     # number of 'S' in matrix
-    return [(i, 'S', j) for i, j in product(range(n), repeat=2) if 'S' in gram_matrix[i,j]]
+    return [(i, nonterm, j) for i, j in product(range(n), repeat=2) for nonterm in gram_matrix[i, j]]
+
+if len(sys.argv) > 1:
+    res = grammar_closure(get_grammar(sys.argv[1]), get_graph(sys.argv[2]))
+    res_str = '\n'.join([','.join([str(i), nonterm, str(j)]) for i, nonterm, j in res])
+    if len(sys.argv) > 3:
+        with open(sys.argv[3]) as f:
+            f.write(res_str)
+            f.close()
+    else:
+        sys.stdout.write(res_str + '\n')

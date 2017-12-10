@@ -55,7 +55,7 @@ class UnitTesting:
             graph = self.graph_parsing(graph_filename)
             my_res = self.intersection(gram, graph)
 
-            if len(my_res) == true_res:
+            if len([triple for triple in my_res if 'S' in triple]) == true_res:
                 self.exit_event.set()
                 time.sleep(0.1)
                 sys.stdout.write('\b..OK!\n')

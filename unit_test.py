@@ -1,6 +1,7 @@
 from unit_testing.unittest_class import UnitTesting
 from parsing import *
 from matrix_method import *
+from top_down import top_down
 
 
 def test_gen(mod_name):
@@ -38,6 +39,7 @@ module_name = input(
 
 modules = {
     'm': grammar_closure,
+    't': top_down
 }
 
 tests = test_gen(module_name)
