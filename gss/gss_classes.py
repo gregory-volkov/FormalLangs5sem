@@ -67,7 +67,7 @@ class GLLenv:
         trans_set = self.gss.nodes[gss_node]
         res_dict = {}
         for item in trans_set:
-            if item in res_dict:
+            if item[0] in res_dict:
                 res_dict[item[0]].append(item[1])
             else:
                 res_dict[item[0]] = [item[1]]
@@ -84,7 +84,7 @@ class GLLenv:
             self.popped = set()
             while self.cur_confs:
                 self.next_step()
-        return list(i for i in self.ans)
+        return list(self.ans)
 
     def get_from_conf(self, conf):
         return conf[0], conf[1], conf[2]
@@ -105,7 +105,6 @@ class GLLenv:
                     )
                     self.__add_new_conf__(new_conf)
 
-
     def nonterm_calls(self, cur_conf, gram_out_edges, box):
         graph_pos, gram_pos, cur_gss_node = self.get_from_conf(cur_conf)
         nonterm_trans = [(to, nonterm) for to, nonterm in gram_out_edges if nonterm in ascii_uppercase]
@@ -118,11 +117,13 @@ class GLLenv:
                     new_gss_node
                 )
                 self.__add_new_conf__(new_conf)
+                self.gss.add_node(new_gss_node, cur_gss_node, to)
 
-
+    #def final_state(self):
 
     def next_step(self):
         cur_conf = self.cur_confs.pop()
+        self.milled_confs.add(cur_conf)
         graph_pos, gram_pos, cur_gss_node = self.get_from_conf(cur_conf)
         cur_box = next(box for box in self.rfa.boxes if box.nonterm == gram_pos[1])
 
@@ -130,45 +131,14 @@ class GLLenv:
 
         try:
             gram_out_edges = list(cur_box.nodes[gram_pos[0]])
+
         except KeyError:
             gram_out_edges = []
-
         # case of common terminals
-        terminal_intersect = [(gram_edge, graph_edge)
-                              for gram_edge, graph_edge in product(gram_out_edges, graph_out_edges)
-                              if gram_edge[1] == graph_edge[1]
-                              ]
-        if terminal_intersect:
-            for gram_edge, graph_edge in terminal_intersect:
-                    new_conf = (
-                        graph_edge[0],
-                        (gram_edge[0], gram_pos[1]),
-                        cur_gss_node
-                    )
-                    self.__add_new_conf__(new_conf)
+        self.term_trans(cur_conf, graph_out_edges, gram_out_edges, cur_box)
 
         # case of calling nonterminal
-        nonterm_trans = [(to, nonterm) for to, nonterm in gram_out_edges if nonterm in ascii_uppercase]
-        if nonterm_trans:
-            for to, nonterm in nonterm_trans:
-                new_gss_node = (graph_pos, nonterm)
-                new_conf =(
-                    graph_pos,
-                    (0, nonterm),
-                    new_gss_node
-                )
-                self.__add_new_conf__(new_conf)
-                if new_gss_node in self.popped:
-                    self.pop_single(new_gss_node, graph_pos)
-                    self.__add_new_conf__(
-                            (
-                            graph_pos,
-                            (to, nonterm),
-                            new_gss_node
-                            )
-                        )
-                else:
-                    self.gss.add_node(new_gss_node, cur_gss_node, to)
+        self.nonterm_calls(cur_conf, gram_out_edges, cur_box)
 
         # case of grammar final state
         if gram_pos[0] == 1:
@@ -180,6 +150,4 @@ class GLLenv:
                         (value, key[1]),
                         key
                     )
-                    if new_conf not in self.milled_confs:
-                        self.cur_confs.add(new_conf)
-        self.milled_confs.add(cur_conf)
+                    self.__add_new_conf__(new_conf)

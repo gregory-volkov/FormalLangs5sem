@@ -1,6 +1,14 @@
 from parsing import *
 from gss.gss_classes import *
 import sys
+import numpy as np
+
+# fake_graph = np.zeros((7,7), dtype=str)
+# str = '424313'
+# for i in range(6):
+#     fake_graph[i, i+1] = str[i]
+#
+# print(fake_graph)
 
 def gram2automata(gram):
     rfa = RFA()
@@ -30,6 +38,7 @@ def top_down(gram, matrix):
     return gll.main()
 
 
+
 if len(sys.argv) > 1:
     res = top_down(get_grammar(sys.argv[1]), get_graph(sys.argv[2]))
     res_str = '\n'.join([','.join([str(i), nonterm, str(j)]) for i, nonterm, j in res])
@@ -38,4 +47,5 @@ if len(sys.argv) > 1:
             f.write(res_str)
             f.close()
     else:
-        sys.stdout.write(res_str + '\n')
+        print(res_str.count('S'))
+        #sys.stdout.write(res_str + '\n')
