@@ -2,7 +2,7 @@
 
 ## Unit tests running
 
-Type in console smth like
+Type in console
 
 ```
 python3 unit_test.py
