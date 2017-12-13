@@ -23,3 +23,11 @@ Example:
 ```
 python3 top_down.py data/Q1.gr data/skos.dot
 ```
+
+## Bottom-up parsing
+
+Example:
+```
+python3 bottom_up.py data/Q1.gr data/skos.dot
+```
+
