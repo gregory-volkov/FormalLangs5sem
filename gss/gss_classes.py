@@ -118,8 +118,9 @@ class GLLenv:
                 )
                 self.__add_new_conf__(new_conf)
                 self.gss.add_node(new_gss_node, cur_gss_node, to)
+                if new_gss_node in self.popped:
+                    self.pop_single(new_gss_node, graph_pos)
 
-    #def final_state(self):
 
     def next_step(self):
         cur_conf = self.cur_confs.pop()

@@ -25,12 +25,6 @@ def grammar_closure(gram, matrix):
     for i, j in product(range(n), repeat=2):
         gram_matrix[i, j] = term2nonterm(matrix[i, j])
 
-    """
-    First variant of gram_matrix define. Problems with matrix of empty lists
-    gram_matrix = np.array([term2nonterm(item) for row in matrix for item in row], dtype=object)\
-        .reshape((n, n))
-    """
-
     # transitive closure while smth changes in gram_matrix
     stop = False
 
@@ -46,7 +40,6 @@ def grammar_closure(gram, matrix):
                         gram_matrix[fst, thd] += nonterm_res
                         stop = False
 
-    # number of 'S' in matrix
     return [(i, nonterm, j) for i, j in product(range(n), repeat=2) for nonterm in gram_matrix[i, j]]
 
 if len(sys.argv) > 1:
@@ -57,4 +50,4 @@ if len(sys.argv) > 1:
             f.write(res_str)
             f.close()
     else:
-        sys.stdout.write(res_str + '\n')
+        sys.stdout.write(str(res_str.count('S')) + '\n')
