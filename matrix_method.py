@@ -50,4 +50,4 @@ if len(sys.argv) > 1:
             f.write(res_str)
             f.close()
     else:
-        sys.stdout.write(str(res_str.count('S')) + '\n')
+        sys.stdout.write(res_str + '\n')
