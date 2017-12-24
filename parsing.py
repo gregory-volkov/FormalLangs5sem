@@ -14,7 +14,7 @@ def get_grammar(filename): # File -> dictionary for productions
                 if match:
                     lp = match.group('lp')
                     rp = match.group('rp')
-                    rp_splitted = rp.replace(' ', '').split(' | ')
+                    rp_splitted = rp.replace(' ', '').split('|')
                     result_dict[lp].extend(rp_splitted)
     except FileNotFoundError:
         print("Can't find the file")
