@@ -9,7 +9,7 @@ import sys
 def new_path_add(matrix, start, final, s, rules):
     for lp, rp in rules.items():
         if s == lp:
-            matrix[start, final].add(rp)
+            matrix[start, final].update(rp)
 
 
 def new_dfs(matrix, start_pos, cur_pos, s, rules, depth=1):
@@ -40,27 +40,29 @@ def bottom_up(gram, matrix):
         r"[A-Z]+"
     )
 
-    term_dict = {term_str: nonterm
-                 for nonterm, rp_prod in gram.items()
-                 for term_str in rp_prod
-                 if term_str_regex.match(term_str)
-                 }
+    term_dict = {}
+    for nonterm, rp_prod in gram.items():
+        for term_str in rp_prod:
+            if term_str_regex.match(term_str):
+                term_dict.setdefault(term_str, set()).add(nonterm)
 
-    nonterm_dict = {nonterm_str: nonterm
-                    for nonterm, rp_prod in gram.items()
-                    for nonterm_str in rp_prod
-                    if nonterm_str_regex.search(nonterm_str)
-                    }
+    nonterm_dict = {}
+    for nonterm, rp_prod in gram.items():
+        for nonterm_str in rp_prod:
+            if nonterm_str_regex.search(nonterm_str):
+                nonterm_dict.setdefault(nonterm_str, set()).add(nonterm)
 
     max_term_len = max(len(term_str) for term_str in term_dict)
     max_nonterm_len = max(len(nonterm_str) for nonterm_str in nonterm_dict)
-    # treminal strings substitution
+
+    # treminal productions substitution
     for i in range(n):
         new_dfs(res_mat, i, i, '', term_dict, max_term_len)
 
     res_set = set((i, symbol, j) for i, j in product(range(n), repeat=2) for symbol in res_mat[i, j])
     smth_changes = True
 
+    # nonterminal productions substitution
     while smth_changes:
         for i in range(n):
             new_dfs(res_mat, i, i, '', nonterm_dict, max_nonterm_len)

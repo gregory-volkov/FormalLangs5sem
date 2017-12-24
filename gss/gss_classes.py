@@ -1,6 +1,7 @@
 from string import ascii_uppercase
 from itertools import product
 
+
 class MyGraph:
 
     def __init__(self, node):
@@ -55,13 +56,16 @@ class GLLenv:
         self.popped = set()
         self.milled_confs = set()
         self.ans = set()
+        self.popped_states = set()
 
     def __add_new_conf__(self, conf):
         if conf not in self.milled_confs:
             self.cur_confs.add(conf)
 
-    def pop_single(self, gss_node, cur_input_state):
-        self.ans.add((gss_node[0], gss_node[1], cur_input_state))
+    def pop_single(self, gss_node, cur_input_state, to_gss_node, label):
+        #self.ans.add((gss_node[0], gss_node[1], cur_input_state))
+        for state in self.popped_states[gss_node]:
+            self.__add_new_conf__((state, (label, to_gss_node[1]), to_gss_node))
 
     def pop_gss(self, gss_node, cur_input_state):
         trans_set = self.gss.nodes[gss_node]
@@ -72,6 +76,8 @@ class GLLenv:
             else:
                 res_dict[item[0]] = [item[1]]
         self.popped.add(gss_node)
+        self.popped_states.setdefault(gss_node, set()) ##
+        self.popped_states[gss_node].add(cur_input_state)##
         self.ans.add((gss_node[0], gss_node[1], cur_input_state))
         return res_dict
 
@@ -79,9 +85,10 @@ class GLLenv:
         n = self.graph.shape[0]
         for i in range(n):
             self.gss = MyGraph((i, 'S'))
-            self.cur_confs = {(i, (0, 'S'), list(self.gss.nodes)[0])}
+            self.cur_confs = {(i, (0, 'S'), (i, 'S'))}
             self.milled_confs = set()
             self.popped = set()
+            self.popped_states = {}
             while self.cur_confs:
                 self.next_step()
         return list(self.ans)
@@ -116,11 +123,10 @@ class GLLenv:
                     (0, nonterm),
                     new_gss_node
                 )
+                if new_gss_node in self.popped:
+                    self.pop_single(new_gss_node, graph_pos, cur_gss_node, to)
                 self.__add_new_conf__(new_conf)
                 self.gss.add_node(new_gss_node, cur_gss_node, to)
-                if new_gss_node in self.popped:
-                    self.pop_single(new_gss_node, graph_pos)
-
 
     def next_step(self):
         cur_conf = self.cur_confs.pop()
@@ -135,6 +141,7 @@ class GLLenv:
 
         except KeyError:
             gram_out_edges = []
+
         # case of common terminals
         self.term_trans(cur_conf, graph_out_edges, gram_out_edges, cur_box)
 
