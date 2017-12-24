@@ -33,5 +33,5 @@ python3 bottom_up.py data/Q1.gr data/skos.dot
 
 ## Remark
 
-Q1_.gr, Q2_.gr, Q3_.gr - original grammars
+Q1_.gr, Q2_.gr, Q3_.gr - original grammars <br />
 Q1.gr, Q2.gr, Q3.gr - grammars in CNF
