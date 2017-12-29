@@ -1,3 +1,4 @@
+from gram2automata import gram2automata
 from unit_testing.unittest_class import UnitTesting
 from parsing import *
 from matrix_method import *
@@ -47,7 +48,11 @@ tests = test_gen(module_name)
 
 
 if module_name in modules:
-    ut = UnitTesting(get_grammar, get_graph, modules[module_name], tests)
-    ut.run_tests()
+    if module_name == 't':
+        ut = UnitTesting(lambda x: gram2automata(get_grammar(x)), get_graph, modules[module_name], tests)
+        ut.run_tests()
+    else:
+        ut = UnitTesting(get_grammar, get_graph, modules[module_name], tests)
+        ut.run_tests()
 else:
     print('Wrong module name')

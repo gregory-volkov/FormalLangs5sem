@@ -1,23 +1,22 @@
-from gss.gss_classes import RFA, RFAbox
+from gss.gll import RFA
+from parsing import get_grammar
+from collections import defaultdict
 
 
 def gram2automata(gram):
-    rfa = RFA()
+    key_states = defaultdict(lambda: defaultdict(set))
+    transitions = defaultdict(set)
+    max_state = 0
     for nonterm in gram:
-        box = RFAbox(nonterm, start_state=0)
-        cur_id = 2
-        for production in gram[nonterm]:
-            if len(production) == 1:
-                box.add_node(0, 1, production)
-                continue
-
-            box.add_node(0, cur_id, production[0])
-
-            for ch in production[1:-1]:
-                box.add_node(cur_id, cur_id + 1, ch)
-                cur_id += 1
-
-            box.add_node(cur_id, 1, production[-1])
-            cur_id += 1
-        rfa.add_box(box)
-    return rfa
+        start_state = max_state
+        max_state += 1
+        key_states[nonterm]['start'].add(start_state)
+        for right_part in gram[nonterm]:
+            cur_state = start_state
+            for symbol in right_part:
+                    transitions[cur_state].add((max_state + 1, symbol))
+                    max_state += 1
+                    cur_state = max_state
+            key_states[nonterm]['final'].add(cur_state)
+        max_state += 1
+    return RFA(key_states, transitions)
