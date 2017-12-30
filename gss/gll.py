@@ -1,4 +1,3 @@
-from functools import reduce
 from collections import defaultdict
 from string import ascii_uppercase, digits
 from itertools import product
