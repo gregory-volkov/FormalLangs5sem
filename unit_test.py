@@ -48,7 +48,7 @@ tests = test_gen(module_name)
 
 
 if module_name in modules:
-    if module_name == 't':
+    if module_name == 't' or module_name == 'b':
         ut = UnitTesting(lambda x: gram2automata(get_grammar(x)), get_graph, modules[module_name], tests)
         ut.run_tests()
     else:

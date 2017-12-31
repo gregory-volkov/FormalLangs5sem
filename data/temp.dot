@@ -1,0 +1,9 @@
+digraph AST {
+rankdir=LR
+0; 1; 2; 3;
+0 -> 1[label="4"]
+1 -> 0[label="3"]
+1 -> 2[label="4"]
+2 -> 2[label="3"]
+2 -> 3[label="3"]
+}

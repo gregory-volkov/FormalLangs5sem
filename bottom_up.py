@@ -1,82 +1,65 @@
-import numpy as np
-from parsing import get_graph, get_grammar
+from parsing import *
 import re
 from itertools import product
-from string import ascii_uppercase
 import sys
 
+def traversal(graph, rfa, nonterm, final_set, used_edges):
+    # used edges - list of pairs (graph_pos, rfa_pos) if we wanna add an existing edge - interrupt traversal
+    graph_pos, rfa_pos = used_edges[-1]
+    if rfa_pos in final_set:
+        fr = used_edges[0][0]
+        to = used_edges[-1][0]
+        graph[fr, to].add(nonterm)
 
-def new_path_add(matrix, start, final, s, rules):
-    for lp, rp in rules.items():
-        if s == lp:
-            matrix[start, final].update(rp)
+    gram_out_edges = rfa.transitions.get(rfa_pos, [])
+
+    graph_out_edges = [(to, label_set) for to, label_set in enumerate(graph[graph_pos]) if label_set]
+
+    for gram_edge, graph_edge in product(gram_out_edges, graph_out_edges):
+        if gram_edge[1] in graph_edge[1]:
+            new_conf = (graph_edge[0], gram_edge[0])
+            if not new_conf in used_edges:
+                new_used = used_edges.copy()
+                new_used.append(new_conf)
+                traversal(graph, rfa, nonterm, final_set, new_used)
 
 
-def new_dfs(matrix, start_pos, cur_pos, s, rules, depth=1):
-    new_path_add(matrix, start_pos, cur_pos, s, rules)
-    if depth == 0:
-        return
-
+def bottom_up(rfa, matrix):
     n = matrix.shape[0]
-    for i in filter(lambda x: bool(matrix[cur_pos, x]), range(n)):
-        letters = matrix[cur_pos, i].copy()
-        for item in letters:
-            new_dfs(matrix, start_pos, i, s + item, rules, depth - 1)
-
-
-def bottom_up(gram, matrix):
-    n = matrix.shape[0]
-
-    res_mat = np.array([set(term) if term else set()
-                        for row in matrix
-                        for term in row
-                        ]).reshape((n, n))
-
-    term_str_regex = re.compile(
-        r"([0-9]|[a-z])+$"
-    )
+    gram_states = set()
 
     nonterm_str_regex = re.compile(
         r"[A-Z]+"
     )
 
-    term_dict = {}
-    for nonterm, rp_prod in gram.items():
-        for term_str in rp_prod:
-            if term_str_regex.match(term_str):
-                term_dict.setdefault(term_str, set()).add(nonterm)
+    for vertex, edges in rfa.transitions.items():
+        gram_states.add(vertex)
+        for edge in edges:
+            gram_states.add(edge[0])
 
-    nonterm_dict = {}
-    for nonterm, rp_prod in gram.items():
-        for nonterm_str in rp_prod:
-            if nonterm_str_regex.search(nonterm_str):
-                nonterm_dict.setdefault(nonterm_str, set()).add(nonterm)
+    closed_graph = np.vectorize(set)(matrix)
+    res_set = set()
 
-    max_term_len = max(len(term_str) for term_str in term_dict)
-    max_nonterm_len = max(len(nonterm_str) for nonterm_str in nonterm_dict)
-
-    # treminal productions substitution
-    for i in range(n):
-        new_dfs(res_mat, i, i, '', term_dict, max_term_len)
-
-    res_set = set((i, symbol, j) for i, j in product(range(n), repeat=2) for symbol in res_mat[i, j])
-    smth_changes = True
-
-    # nonterminal productions substitution
-    while smth_changes:
-        for i in range(n):
-            new_dfs(res_mat, i, i, '', nonterm_dict, max_nonterm_len)
-        new_set = set((i, symbol, j) for i, j in product(range(n), repeat=2) for symbol in res_mat[i, j])
-        if res_set == new_set:
-            smth_changes = False
+    while True:
+        len_before = len(res_set)
+        for nonterm in rfa.key_states:
+            final_states = rfa.key_states[nonterm]['final']
+            for start_state in rfa.key_states[nonterm]['start']:
+                for graph_state in range(n):
+                    traversal(closed_graph, rfa, nonterm, final_states, used_edges=[(graph_state, start_state)])
+        res_set = set((i, symbol, j) for i, j in product(range(n), repeat=2) for symbol in closed_graph[i,j]
+                    if nonterm_str_regex.search(symbol))
+        len_after = len(res_set)
+        if len_before < len_after:
+            continue
         else:
-            res_set = new_set.copy()
+            break
 
-    return list(filter(lambda x: x[1] in ascii_uppercase, res_set))
+    return list(res_set)
 
 
 if len(sys.argv) > 1:
-    res = bottom_up(get_grammar(sys.argv[1]), get_graph(sys.argv[2]))
+    res = bottom_up(get_rfa(sys.argv[1]), get_graph(sys.argv[2]))
     res_str = '\n'.join([','.join([str(i), nonterm, str(j)]) for i, nonterm, j in res])
     if len(sys.argv) > 3:
         with open(sys.argv[3]) as f:
