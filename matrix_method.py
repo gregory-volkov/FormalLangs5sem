@@ -46,7 +46,7 @@ if len(sys.argv) > 1:
     res = grammar_closure(get_grammar(sys.argv[1]), get_graph(sys.argv[2]))
     res_str = '\n'.join([','.join([str(i), nonterm, str(j)]) for i, nonterm, j in res])
     if len(sys.argv) > 3:
-        with open(sys.argv[3]) as f:
+        with open(sys.argv[3], 'w') as f:
             f.write(res_str)
             f.close()
     else:
