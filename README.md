@@ -21,14 +21,14 @@ python3 matrix_method.py data/Q1.gr data/skos.dot
 
 Example:
 ```
-python3 top_down.py data/Q1.gr data/skos.dot
+python3 top_down.py data/an_bn.dot data/temp.dot
 ```
 
 ## Bottom-up parsing
 
 Example:
 ```
-python3 bottom_up.py data/Q1.gr data/skos.dot
+python3 bottom_up.py data/an_bn.dot data/temp.dot
 ```
 
 ## Remark
