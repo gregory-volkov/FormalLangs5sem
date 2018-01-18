@@ -1,14 +1,13 @@
 # CFG and FA intersection
 
-## Unit tests running
+## Unit tests
 
 Type in console
 
 ```
 python3 unit_test.py
 ```
-
-for runing unit tests
+Then just follow the instructions
 
 ## Matrix method
 
@@ -21,14 +20,14 @@ python3 matrix_method.py data/Q1.gr data/skos.dot
 
 Example:
 ```
-python3 top_down.py data/an_bn.dot data/temp.dot
+python3 top_down.py my_data/grammars/an_bn.dot my_data/inputs/aaaaa.dot
 ```
 
 ## Bottom-up parsing
 
 Example:
 ```
-python3 bottom_up.py data/an_bn.dot data/temp.dot
+python3 bottom_up.py my_data/grammars/an_bn.dot my_data/inputs/aaaaa.dot
 ```
 
 ## Remark
