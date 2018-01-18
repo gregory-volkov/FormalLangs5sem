@@ -1,6 +1,7 @@
 from parsing import *
 import sys
 from gss.gll import *
+from gram2automata import gram2automata
 
 
 def top_down(rfa, matrix):

@@ -1,3 +1,4 @@
+from datetime import datetime
 import sys
 import threading
 import time
@@ -47,14 +48,15 @@ class UnitTesting:
             gram_filename = test_args[0]
             graph_filename = test_args[1]
             true_res = self.tests[test_args]
-            sys.stdout.write(str(gram_filename.split('\\')[-1]) + ', ' + str(graph_filename.split('\\')[-1]) + '\n')
+            sys.stdout.write('[' + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ']: ' +
+                             str(gram_filename.split('\\')[-1]) + ', ' + str(graph_filename.split('\\')[-1]) +
+                             '\n')
 
             threading.Thread(target=self.loading_printing).start()
 
             gram = self.grammar_parsing(gram_filename)
             graph = self.graph_parsing(graph_filename)
             my_res = self.intersection(gram, graph)
-
             if len([triple for triple in my_res if 'S' in triple]) == true_res:
                 self.exit_event.set()
                 time.sleep(0.1)

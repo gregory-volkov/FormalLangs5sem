@@ -1,65 +1,93 @@
+from gram2automata import gram2automata
 from parsing import *
 import re
 from itertools import product
 import sys
 
-def traversal(graph, rfa, nonterm, final_set, used_edges):
-    # used edges - list of pairs (graph_pos, rfa_pos) if we wanna add an existing edge - interrupt traversal
-    graph_pos, rfa_pos = used_edges[-1]
-    if rfa_pos in final_set:
-        fr = used_edges[0][0]
-        to = used_edges[-1][0]
-        graph[fr, to].add(nonterm)
 
-    gram_out_edges = rfa.transitions.get(rfa_pos, [])
+def bfs(rfa, graph, final_pos2nonterm, start_pair, nonterm):
+    # start_pair = (rfa_pos, graph_pos)
+    smth_changed = False
+    pairs_set = {start_pair}
+    milled_pairs = set()
+    while pairs_set:
+        rfa_pos, gr_pos = pairs_set.pop()
+        milled_pairs.add((rfa_pos, gr_pos))
+        if rfa_pos in final_pos2nonterm and nonterm in final_pos2nonterm[rfa_pos]:
+            item = graph[start_pair[1]][gr_pos]
+            before_len = len(item)
+            item.update(final_pos2nonterm[rfa_pos])
+            if before_len < len(item):
+                smth_changed = True
+        rfa_label2v = defaultdict(set)
+        gr_label2v = defaultdict(set)
+        gram_out_labels = set()
+        graph_out_labels = set()
 
-    graph_out_edges = [(to, label_set) for to, label_set in enumerate(graph[graph_pos]) if label_set]
+        for to, label in rfa.transitions.get(rfa_pos, set()):
+            gram_out_labels.add(label)
+            rfa_label2v[label].add(to)
 
-    for gram_edge, graph_edge in product(gram_out_edges, graph_out_edges):
-        if gram_edge[1] in graph_edge[1]:
-            new_conf = (graph_edge[0], gram_edge[0])
-            if not new_conf in used_edges:
-                new_used = used_edges.copy()
-                new_used.append(new_conf)
-                traversal(graph, rfa, nonterm, final_set, new_used)
+        for to in graph[gr_pos]:
+            for label in graph[gr_pos][to]:
+                graph_out_labels.add(label)
+                gr_label2v[label].add(to)
+
+        common_labels = gram_out_labels.intersection(graph_out_labels)
+        if common_labels:
+            pairs_set.update([(new_rfa_pos, new_graph_pos)
+                              for label in common_labels
+                              for new_rfa_pos, new_graph_pos in product(rfa_label2v[label], gr_label2v[label])
+                              if (new_rfa_pos, new_graph_pos) not in milled_pairs
+                              ])
+    return smth_changed
 
 
-def bottom_up(rfa, matrix):
-    n = matrix.shape[0]
+def bottom_up(rfa, graph):
+    ans_set = set()
     gram_states = set()
-
-    nonterm_str_regex = re.compile(
-        r"[A-Z]+"
-    )
 
     for vertex, edges in rfa.transitions.items():
         gram_states.add(vertex)
         for edge in edges:
             gram_states.add(edge[0])
 
-    closed_graph = np.vectorize(set)(matrix)
-    res_set = set()
+    graph_states = set()
+    for fr in graph:
+        graph_states.update(set(graph[fr]))
+        graph_states.add(fr)
 
-    while True:
-        len_before = len(res_set)
-        for nonterm in rfa.key_states:
-            final_states = rfa.key_states[nonterm]['final']
-            for start_state in rfa.key_states[nonterm]['start']:
-                for graph_state in range(n):
-                    traversal(closed_graph, rfa, nonterm, final_states, used_edges=[(graph_state, start_state)])
-        res_set = set((i, symbol, j) for i, j in product(range(n), repeat=2) for symbol in closed_graph[i,j]
-                    if nonterm_str_regex.search(symbol))
-        len_after = len(res_set)
-        if len_before < len_after:
-            continue
-        else:
-            break
+    start_pos2nonterm = defaultdict(set)
+    final_pos2nonterm = defaultdict(set)
 
-    return list(res_set)
+    for nonterm in rfa.start_states:
+        for rfa_state in rfa.start_states[nonterm]:
+            start_pos2nonterm[rfa_state].add(nonterm)
+
+    for nonterm in rfa.final_states:
+        for rfa_state in rfa.final_states[nonterm]:
+            final_pos2nonterm[rfa_state].add(nonterm)
+
+    smth_changed = True
+    while smth_changed:
+        smth_changed = False
+        for gr_pos in graph_states:
+            for nonterm in rfa.start_states:
+                for rfa_pos in rfa.start_states[nonterm]:
+                    smth_changed |= bfs(rfa, graph, final_pos2nonterm, (rfa_pos, gr_pos), nonterm)
+
+    for fr in graph:
+        for to in graph[fr]:
+                for token in graph[fr][to]:
+                    if any(ch.isupper() for ch in token):
+                        ans_set.add((fr, token, to))
+
+    return list(ans_set)
 
 
 if len(sys.argv) > 1:
-    res = bottom_up(get_rfa(sys.argv[1]), get_graph(sys.argv[2]))
+    #res = bottom_up(get_rfa(sys.argv[1]), get_graph(sys.argv[2]))
+    res = bottom_up(gram2automata(get_grammar(sys.argv[1])), get_graph(sys.argv[2]))
     res_str = '\n'.join([','.join([str(i), nonterm, str(j)]) for i, nonterm, j in res])
     if len(sys.argv) > 3:
         with open(sys.argv[3], 'w') as f:

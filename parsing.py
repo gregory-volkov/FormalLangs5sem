@@ -3,9 +3,10 @@ import numpy as np
 from collections import defaultdict
 from gss.gll import RFA
 
+
 def get_grammar(filename): # File -> dictionary for productions
-    result_dict = defaultdict(list)
-    production_pattern = r'(?P<lp>\w) -> (?P<rp>.*)$'
+    result_dict = defaultdict(lambda: list(list()))
+    production_pattern = r'(?P<lp>(\w|\d)*) -> (?P<rp>.*)$'
     production = re.compile(production_pattern)  # Regex for productions
     try:
         with open(filename) as f:
@@ -14,33 +15,31 @@ def get_grammar(filename): # File -> dictionary for productions
                 if match:
                     lp = match.group('lp')
                     rp = match.group('rp')
-                    rp_splitted = rp.replace(' ', '').split('|')
-                    result_dict[lp].extend(rp_splitted)
+                    rp_splitted = rp.split()
+                    result_dict[lp].append(rp_splitted)
     except FileNotFoundError:
         print("Can't find file with grammar")
         raise FileNotFoundError
-    return {k: ['$'] if v[0] == 'eps' else v for k, v in result_dict.items()}
+    return dict(result_dict)
 
 
 def get_graph(filename):  # Graph -> np.ndarray (adjacency matrix)
-    transition_pattern = r"(?P<lp>\d*) -> (?P<rp>\d*).*\"(?P<label>\d*)\".*"
+    transition_pattern = r"(?P<lp>\d*) -> (?P<rp>\d*).*\"(?P<label>\w*)\".*"
     transition = re.compile(transition_pattern)
     try:
         with open(filename) as f:
-            nodes = [next(f) for _ in range(3)][2]
-            shape = nodes.count(';')  # number of nodes
-            matrix = np.zeros((shape, shape), dtype=str)
+            adj_list = defaultdict(lambda: defaultdict(set))
             for line in filter(None, f.read().splitlines()):
                 match = transition.match(line)
                 if match:
                     fr = int(match.group('lp'))
                     to = int(match.group('rp'))
                     label = match.group('label')
-                    matrix[fr, to] = '$' if label == 'eps' else label
+                    adj_list[fr][to].add(label)
     except FileNotFoundError:
         print("Can't find file with graph")
         raise FileNotFoundError
-    return matrix
+    return adj_list
 
 
 def get_rfa(filename):
@@ -49,7 +48,8 @@ def get_rfa(filename):
     vertex_descr = r'(?P<vertex>\d*)\[(label="(?P<label>\w*)"|)(, |)(shape="(?P<shape>\w*)"|)(, |)(color="(?P<color>\w*)"|).*\]$'
     trans = r'(?P<from>\d*) -> (?P<to>\d*)\[label="(?P<label>\w*)"\]$'
     transitions = defaultdict(set)
-    key_states = defaultdict(lambda: defaultdict(set))
+    start_states = defaultdict(set)
+    final_states = defaultdict(set)
     vertex_descr_regex = re.compile(vertex_descr)
     trans_regex = re.compile(trans)
     try:
@@ -66,17 +66,17 @@ def get_rfa(filename):
                     vertex = int(descr_matching.group('vertex'))
 
                     if shape == "doublecircle":
-                        key_states[label]['final'].add(vertex)
+                        final_states[label].add(vertex)
 
                     if color == "green":
-                        key_states[label]['start'].add(vertex)
+                        start_states[label].add(vertex)
 
                 if trans_matching:
                     label = trans_matching.group('label')
                     fr = int(trans_matching.group('from'))
                     to = int(trans_matching.group('to'))
                     transitions[fr].add((to, label))
-            return RFA({key: dict(value) for key, value in dict(key_states).items()}, dict(transitions))
+            return RFA(start_states, final_states, dict(transitions))
 
     except FileNotFoundError:
         print("Can't find file with RFA")

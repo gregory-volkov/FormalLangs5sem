@@ -7,6 +7,7 @@ class MyGraph:
 
     def __init__(self, node):
         # nodes is a dict: node -> set((node, label))
+        self.nodes = defaultdict(set)
         self.nodes = {node: set()}
 
     def add_node(self, fr, to, label):
@@ -18,15 +19,13 @@ class MyGraph:
 
 class RFA:
 
-    def __init__(self, key_states, transitions):
-        # key_states: nonterm -> dict: {'start' -> set(start_position), 'final' -> set(final_positions)}
+    def __init__(self, start_states, final_states, transitions):
+        # start_states and final_states are dicts: nonterm -> set(state)
         # transitions : vertex -> set((vertex, label))
-        self.key_states = key_states
+        self.start_states = start_states
         self.transitions = transitions
-        self.final_states = set(state
-                                for start_final_dict in key_states.values()
-                                for state in start_final_dict['final']
-                                )
+        self.final_states = final_states
+
 
 class GLL:
     """
@@ -66,8 +65,7 @@ class GLL:
                     node
                 )
                 self.__add_new_conf__(new_conf)
-        if self.gss.nodes[gss_node] == set():
-            self.ans.add((gss_node[0], gss_node[1], cur_input_state))
+        self.ans.add((gss_node[0], gss_node[1], cur_input_state))
         self.popped.add(gss_node)
 
     def pop_single(self, popped_node, cur_node, label):
@@ -80,15 +78,20 @@ class GLL:
             self.__add_new_conf__(new_conf)
 
     def main(self):
-        n = self.graph.shape[0]
-        start_positions = set()
+        rfa_start_positions = set()
+        graph_start_positions = set()
 
-        for nonterm in self.rfa.key_states:
-            for start_state in self.rfa.key_states[nonterm]['start']:
-                start_positions.add((nonterm, start_state))
+        for nonterm in self.rfa.start_states:
+            for rfa_pos in self.rfa.start_states[nonterm]:
+                rfa_start_positions.add((nonterm, rfa_pos))
 
-        for graph_pos in range(n):
-            for nonterm, start_state in start_positions:
+        for fr in self.graph:
+            graph_start_positions.update(set(self.graph[fr]))
+            graph_start_positions.add(fr)
+
+
+        for graph_pos in graph_start_positions:
+            for nonterm, start_state in rfa_start_positions:
                 self.gss = MyGraph((graph_pos, nonterm))
                 self.cur_confs = {(graph_pos, start_state, (graph_pos, nonterm))}
                 self.milled_confs = set()
@@ -98,11 +101,8 @@ class GLL:
                     self.next_step()
         return list(self.ans)
 
-    def get_from_conf(self, conf):
-        return conf[0], conf[1], conf[2]
-
     def term_trans(self, cur_conf, graph_out_edges, gram_out_edges):
-        graph_pos, gram_pos, cur_gss_node = self.get_from_conf(cur_conf)
+        graph_pos, gram_pos, cur_gss_node = cur_conf
 
         terminal_intersect = [(gram_edge, graph_edge)
                               for gram_edge, graph_edge in product(gram_out_edges, graph_out_edges)
@@ -118,13 +118,13 @@ class GLL:
                     self.__add_new_conf__(new_conf)
 
     def nonterm_calls(self, cur_conf, gram_out_edges):
-        graph_pos, gram_pos, cur_gss_node = self.get_from_conf(cur_conf)
+        graph_pos, gram_pos, cur_gss_node = cur_conf
 
         nonterm_trans = [(to, nonterm) for to, nonterm in gram_out_edges if self.is_nonterm(nonterm)]
 
         if nonterm_trans:
             for label, nonterm in nonterm_trans:
-                for start_pos in self.rfa.key_states[nonterm]['start']:
+                for start_pos in self.rfa.start_states[nonterm]:
                     new_gss_node = (graph_pos, nonterm)
 
                     new_conf = (
@@ -134,28 +134,26 @@ class GLL:
                     )
 
                     if new_gss_node in self.popped:
-                        self.pop_single(cur_gss_node, new_gss_node, label)
+                        self.pop_single(new_gss_node, cur_gss_node, label)
                     self.__add_new_conf__(new_conf)
                     self.gss.add_node(new_gss_node, cur_gss_node, label)
 
     def nonterm_final_state(self, cur_conf):
-        graph_pos, gram_pos, cur_gss_node = self.get_from_conf(cur_conf)
-        if gram_pos in self.rfa.final_states:
+        graph_pos, gram_pos, cur_gss_node = cur_conf
+        if gram_pos in self.rfa.final_states[cur_gss_node[1]]:
             self.pop_gss(cur_gss_node, graph_pos)
             self.popped.add(cur_gss_node)
-            self.popped_states[cur_gss_node].add(graph_pos)
 
     def next_step(self):
         cur_conf = self.cur_confs.pop()
         self.milled_confs.add(cur_conf)
-        graph_pos, gram_pos, cur_gss_node = self.get_from_conf(cur_conf)
+        graph_pos, gram_pos, cur_gss_node = cur_conf
 
-        graph_out_edges = [(to, label) for to, label in enumerate(self.graph[graph_pos]) if label]
+        graph_out_edges = [(to, label) for to in self.graph[graph_pos] for label in self.graph[graph_pos][to]]
 
-        try:
+        if gram_pos in self.rfa.transitions:
             gram_out_edges = self.rfa.transitions[gram_pos]
-
-        except KeyError:
+        else:
             gram_out_edges = []
 
         # case of common terminals

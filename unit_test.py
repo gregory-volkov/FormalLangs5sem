@@ -5,7 +5,27 @@ from matrix_method import *
 from top_down import top_down
 from bottom_up import bottom_up
 
-def test_gen(mod_name):
+
+def my_test_gen(mod_name):
+    graphs = map(lambda x: 'my_data/inputs/' + x + '.dot', [
+        'aaaaa',
+        'mutual_loop',
+        'my_in_1',
+        'my_in_2',
+        'my_in_3',
+        'rand_1'
+    ])
+
+    if mod_name == 'm':
+        grammars = map(lambda x: 'my_data/grammars/' + x + '.gr', ['My_1', 'My_2'])
+        ans = [0, 20, 2, 3, 3, 77655, 15, 16, 2, 3, 3, 3095]
+    else:
+        grammars = map(lambda x: 'my_data/grammars/' + x + '.dot', ['an_bn', 'a_star_b', 'some_rfa_1'])
+        ans = [6, 27, 3, 5, 7, 1995, 0, 8, 2, 4, 6, 3074, 5, 5, 3, 5, 5, 9507]
+
+    return dict(zip(product(grammars, graphs), ans))
+
+def semen_test_gen(mod_name):
 
     if mod_name == 'm':
         grammars = map(lambda x: 'data/' + x + '.gr', ['Q1', 'Q2'])
@@ -31,12 +51,26 @@ def test_gen(mod_name):
 
     return dict(zip(product(grammars, graphs), ans))
 
+while True:
+    test_type = input( '\n' +
+        """If u wanna run tests:
+         from google doc (for Q1 and Q2 grammars): print '1'
+         my tests, which are located in the folder my_data: print '2'""" + '\n'
+    )
+    if test_type != '1' and test_type != '2':
+        print('Wrong input, try again\n')
+    else: break
 
-module_name = input(
-    '\n' + """If u wanna run unit tests for:
-            matrix module: print 'm'
-            top-down module: print 't'
-            bottom-up module: print 'b'""" + '\n')
+while True:
+    module_name = input(
+        '\n' + """If u wanna run tests for:
+                matrix module: print 'm'
+                top-down module: print 't'
+                bottom-up module: print 'b'""" + '\n')
+    if module_name != 'm' and module_name != 'b' and module_name != 't':
+        print('Wrong input, try again\n')
+    else: break
+
 
 modules = {
     'm': grammar_closure,
@@ -44,15 +78,22 @@ modules = {
     'b': bottom_up
 }
 
-tests = test_gen(module_name)
+if test_type == '1':
+    tests = semen_test_gen(module_name)
 
-
-if module_name in modules:
     if module_name == 't' or module_name == 'b':
         ut = UnitTesting(lambda x: gram2automata(get_grammar(x)), get_graph, modules[module_name], tests)
         ut.run_tests()
     else:
         ut = UnitTesting(get_grammar, get_graph, modules[module_name], tests)
         ut.run_tests()
-else:
-    print('Wrong module name')
+
+if test_type == '2':
+    tests = my_test_gen(module_name)
+
+    if module_name == 't' or module_name == 'b':
+        ut = UnitTesting(get_rfa, get_graph, modules[module_name], tests)
+        ut.run_tests()
+    else:
+        ut = UnitTesting(get_grammar, get_graph, modules[module_name], tests)
+        ut.run_tests()
