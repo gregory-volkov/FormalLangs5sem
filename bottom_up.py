@@ -86,8 +86,7 @@ def bottom_up(rfa, graph):
 
 
 if len(sys.argv) > 1:
-    #res = bottom_up(get_rfa(sys.argv[1]), get_graph(sys.argv[2]))
-    res = bottom_up(gram2automata(get_grammar(sys.argv[1])), get_graph(sys.argv[2]))
+    res = bottom_up(get_rfa(sys.argv[1]), get_graph(sys.argv[2]))
     res_str = '\n'.join([','.join([str(i), nonterm, str(j)]) for i, nonterm, j in res])
     if len(sys.argv) > 3:
         with open(sys.argv[3], 'w') as f:
